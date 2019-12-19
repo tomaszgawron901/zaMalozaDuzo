@@ -1,0 +1,7 @@
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\bin\Debug\zaduzozamalo.exe.config
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\bin\Debug\zaduzozamalo.exe
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\bin\Debug\zaduzozamalo.pdb
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\obj\Debug\zaduzozamalo.csprojAssemblyReference.cache
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\obj\Debug\zaduzozamalo.csproj.CoreCompileInputs.cache
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\obj\Debug\zaduzozamalo.exe
+D:\Users\tomasz.gawron\Desktop\zaduzozamalo\zaduzozamalo\obj\Debug\zaduzozamalo.pdb
