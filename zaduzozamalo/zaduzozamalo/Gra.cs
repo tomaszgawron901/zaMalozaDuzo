@@ -124,6 +124,7 @@ namespace GraZaDuzoZaMalo.Model
             StatusGry = Status.WTrakcie;
 
             listaRuchow = new List<Ruch>();
+            listaRuchow.Add(new Ruch(null, null, Status.WTrakcie));
         }
 
         public Gra() : this(1, 100) { }

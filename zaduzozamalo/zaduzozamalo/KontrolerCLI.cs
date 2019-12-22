@@ -19,6 +19,9 @@ namespace AppGraZaDuzoZaMaloCLI
         public int MinZakres { get; private set; } = 1;
         public int MaxZakres { get; private set; } = 100;
 
+        public DateTime CzasRozpoczecia { get => gra.CzasRozpoczecia; }
+        public DateTime? CzasZakonczenia { get => gra.CzasZakonczenia; }
+
         public IReadOnlyList<Gra.Ruch> ListaRuchow {
             get
             { return gra.ListaRuchow;  }
@@ -43,6 +46,7 @@ namespace AppGraZaDuzoZaMaloCLI
                 {
                     widok.CzyscEkran();
                     widok.HistoriaGry();
+                    WznowRozgrywke();
                     UruchomRozgrywke();
                 }
             }
@@ -52,7 +56,7 @@ namespace AppGraZaDuzoZaMaloCLI
             {
                 InicjalizujNowaRozgrywke();
                 UruchomRozgrywke();
-                //UsunPlik(@"save.txt");
+                UsunPlik(@"save.txt");
             }
                 
         }
@@ -162,6 +166,7 @@ namespace AppGraZaDuzoZaMaloCLI
 
         public void ZakonczGre()
         {
+            WstrzymajRozgrywke();
             ZapiszRozgrywke();
             gra = null;
             widok.CzyscEkran(); //komunikat o końcu gry

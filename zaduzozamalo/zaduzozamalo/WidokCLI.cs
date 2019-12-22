@@ -95,12 +95,16 @@ namespace AppGraZaDuzoZaMaloCLI
 
             WriteLine(string.Format("{0,-10}║{1,-10}║{2,-10}║{3,-10}║{4,-10}", "Nr", "Propozycja", "Odpowiedź", "Czas", "Status"));
             WriteLine(string.Format("{0}{1}{0}{1}{0}{1}{0}{1}{0}", new String('═', 10), '╬'));
-            int i = 1;
-            foreach ( var ruch in kontroler.ListaRuchow)
+            TimeSpan sumaCzasow = new TimeSpan(0, 0, 0);
+            for(int i = 1; i<kontroler.ListaRuchow.Count; i++)
             {
-                WriteLine(string.Format("{0,-10}║{1,-10}║{2,-10}║{3,-10}║{4,-10}", i, ruch.Liczba, ruch.Wynik, ruch.Czas.Second, ruch.StatusGry));
-                i++;
+                if (kontroler.ListaRuchow[i - 1].StatusGry != GraZaDuzoZaMalo.Model.Gra.Status.WTrakcie)
+                    continue;
+                var ruch = kontroler.ListaRuchow[i];
+                sumaCzasow += ruch.Czas - kontroler.ListaRuchow[i - 1].Czas;
+                WriteLine(string.Format("{0,-10}║{1,-10}║{2,-10}║{3,-10:F3}║{4,-10}", i, ruch.Liczba, ruch.Wynik, sumaCzasow.TotalSeconds, ruch.StatusGry));
             }
+            ;
         }
 
         public void KomunikatRozgrywkaPoddana()
