@@ -10,6 +10,8 @@ namespace AppGraZaDuzoZaMaloCLI
     class WidokCLI
     {
         public const char ZNAK_ZAKONCZENIA_GRY = 'X';
+        public const char ZNAK_ZAWIESZENIA_GRY = 'W';
+        public const char ZNAK_PODDANIA_GRY = 'P';
 
         private KontrolerCLI kontroler;
 
@@ -25,13 +27,23 @@ namespace AppGraZaDuzoZaMaloCLI
             bool sukces = false;
             while (!sukces)
             {
-                Write("Podaj swoją propozycję (lub " + KontrolerCLI.ZNAK_ZAKONCZENIA_GRY + " aby przerwać): ");
+                Write($"Podaj swoją propozycję (lub {ZNAK_ZAKONCZENIA_GRY} aby przerwać, {ZNAK_PODDANIA_GRY} aby poddać rozgrywkę, {ZNAK_ZAWIESZENIA_GRY} aby wstrzymać rozgrywkę.): ");
                 try
                 {
                     string value = ReadLine().TrimStart().ToUpper();
-                    if (value.Length > 0 && value[0].Equals(ZNAK_ZAKONCZENIA_GRY))
-                        throw new KoniecGryException();
-
+                    if (value.Length == 1 )
+                    {
+                        switch (value[0])
+                        {
+                            case ZNAK_ZAKONCZENIA_GRY:
+                                throw new KoniecGryException("Escape");
+                            case ZNAK_PODDANIA_GRY:
+                                throw new KoniecGryException("Surrender");
+                            case ZNAK_ZAWIESZENIA_GRY:
+                                throw new KoniecGryException("Stop");
+                        }
+                            
+                    }
                     //UWAGA: ponizej może zostać zgłoszony wyjątek 
                     wynik = Int32.Parse(value);
                     sukces = true;
@@ -45,6 +57,10 @@ namespace AppGraZaDuzoZaMaloCLI
                 {
                     WriteLine("Przesadziłeś. Podana przez Ciebie wartość jest zła! Spróbuj raz jeszcze.");
                     continue;
+                }
+                catch(KoniecGryException e)
+                {
+                    throw e;
                 }
                 catch (Exception)
                 {
@@ -77,14 +93,35 @@ namespace AppGraZaDuzoZaMaloCLI
                 return;
             }
 
-            WriteLine("Nr    Propozycja     Odpowiedź     Czas    Status");
-            WriteLine("=================================================");
+            WriteLine(string.Format("{0,-10}║{1,-10}║{2,-10}║{3,-10}║{4,-10}", "Nr", "Propozycja", "Odpowiedź", "Czas", "Status"));
+            WriteLine(string.Format("{0}{1}{0}{1}{0}{1}{0}{1}{0}", new String('═', 10), '╬'));
             int i = 1;
             foreach ( var ruch in kontroler.ListaRuchow)
             {
-                WriteLine($"{i}     {ruch.Liczba}      {ruch.Wynik}  {ruch.Czas.Second}   {ruch.StatusGry}");
+                WriteLine(string.Format("{0,-10}║{1,-10}║{2,-10}║{3,-10}║{4,-10}", i, ruch.Liczba, ruch.Wynik, ruch.Czas.Second, ruch.StatusGry));
                 i++;
             }
+        }
+
+        public void KomunikatRozgrywkaPoddana()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            WriteLine("Rozgrywka Poddana!!!");
+            Console.ResetColor();
+        }
+
+        public void KomunikatRozgrywkaWstrzymana()
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            WriteLine("Rozgrywka wstrzymana.");
+            Console.ResetColor();
+        }
+
+        public void KomunikatRozgrywkaWznowiona()
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            WriteLine("Rozgrywka wznowiona.");
+            Console.ResetColor();
         }
 
         public void KomunikatZaDuzo()

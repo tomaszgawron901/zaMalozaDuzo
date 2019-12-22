@@ -13,8 +13,6 @@ namespace AppGraZaDuzoZaMaloCLI
 {
     public class KontrolerCLI
     {
-        public const char ZNAK_ZAKONCZENIA_GRY = 'X';
-
         private Gra gra;
         private WidokCLI widok;
 
@@ -35,18 +33,61 @@ namespace AppGraZaDuzoZaMaloCLI
         public void Uruchom()
         {
             widok.OpisGry();
+            try
+            {
+                if (!File.Exists(@"save.txt")) throw new FileNotFoundException();
+                WczytajRozgryke();//Może zgłosić wyjątek.
+                if (gra.StatusGry == Gra.Status.Zakonczona || gra.StatusGry == Gra.Status.Poddana)
+                    throw new Exception("Odczytana rozgrywka jest już zakończona.");
+                if (widok.ChceszKontynuowac("Czy chcesz wczytać zapis poprzedniej rozgrywki (t/n)? "))
+                {
+                    widok.CzyscEkran();
+                    widok.HistoriaGry();
+                    UruchomRozgrywke();
+                }
+            }
+            catch (Exception) { }
+            finally { UsunPlik(@"save.txt"); }
             while( widok.ChceszKontynuowac("Czy chcesz kontynuować aplikację (t/n)? ") )
+            {
+                InicjalizujNowaRozgrywke();
                 UruchomRozgrywke();
+                //UsunPlik(@"save.txt");
+            }
+                
+        }
+
+        public void UsunPlik( string path )
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+
+        public void WczytajRozgryke()
+        {
+            IFormatter formatter = new BinaryFormatter();
+            Stream stream = new FileStream(@"save.txt", FileMode.Open, FileAccess.Read);
+            gra= (Gra)formatter.Deserialize(stream);
+            stream.Close();
+        }
+
+        public void ZapiszRozgrywke()
+        {
+            IFormatter formatter = new BinaryFormatter();
+            Stream stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write);
+            formatter.Serialize(stream, gra);
+            stream.Close();
+        }
+
+        public void InicjalizujNowaRozgrywke()
+        {
+            widok.CzyscEkran();
+            // ustaw zakres do losowania
+            gra = new Gra(MinZakres, MaxZakres); //może zgłosić ArgumentException
         }
 
         public void UruchomRozgrywke()
         {
-            widok.CzyscEkran();
-            // ustaw zakres do losowania
-
-
-            gra = new Gra(MinZakres, MaxZakres); //może zgłosić ArgumentException
-
             do
             {
                 //wczytaj propozycję
@@ -55,18 +96,40 @@ namespace AppGraZaDuzoZaMaloCLI
                 {
                     propozycja = widok.WczytajPropozycje();
                 }
-                catch( KoniecGryException)
+                catch( KoniecGryException e)
                 {
-                    gra.Przerwij();
+                    switch(e.Message)
+                    {
+                        case "Escape":
+                            ZakonczGre();
+                            break;
+                        case "Surrender":
+                            PoddajRozgrywke();
+                            break;
+                        case "Stop":
+                            WstrzymajRozgrywke();
+                            break;
+                    }
                 }
 
-                Console.WriteLine(propozycja);
-
                 if (gra.StatusGry == Gra.Status.Poddana) break;
+                if (gra.StatusGry == Gra.Status.Zawieszona)
+                {
+                    do
+                    {
+                        widok.CzyscEkran();
+                        widok.KomunikatRozgrywkaWstrzymana();
+                    }
+                    while (!widok.ChceszKontynuowac("Czy chcesz wznowić rozgrywkę (t/n)?"));
+                    WznowRozgrywke();
+                    continue;
+                }
+                Console.WriteLine(propozycja);
 
                 //Console.WriteLine( gra.Ocena(propozycja) );
                 //oceń propozycję, break
-                switch( gra.Ocena(propozycja) )
+                widok.CzyscEkran();
+                switch ( gra.Ocena(propozycja) )
                 {
                     case ZaDuzo:
                         widok.KomunikatZaDuzo();
@@ -99,41 +162,30 @@ namespace AppGraZaDuzoZaMaloCLI
 
         public void ZakonczGre()
         {
-            IFormatter formater = new BinaryFormatter();
-            Stream stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write);
-            formater.Serialize(stream, gra);
-            stream.Close();
+            ZapiszRozgrywke();
             gra = null;
             widok.CzyscEkran(); //komunikat o końcu gry
             widok = null;
             System.Environment.Exit(0);
         }
 
-        public void ZakonczRozgrywke()
+        public void PoddajRozgrywke()
         {
-            gra.Przerwij();
+            widok.KomunikatRozgrywkaPoddana();
+            Console.WriteLine($"Poszukwana liczba to {gra.Poddaj()}.");
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="defaultValue"></param>
-        /// <exception cref="KoniecGryException"></exception>
-        /// <exception cref="FormatException"></exception>
-        /// <exception cref="OverflowException"></exception>
-        /// <returns></returns>
-        public int WczytajLiczbeLubKoniec(string value, int defaultValue )
+        public void WstrzymajRozgrywke()
         {
-            if( string.IsNullOrEmpty(value) )
-                return defaultValue;
+            gra.Wstrzymaj();
+        }
 
-            value = value.TrimStart().ToUpper();
-            if (value.Length > 0 && value[0].Equals(ZNAK_ZAKONCZENIA_GRY))
-                ZakonczGre();
-
-            //UWAGA: ponizej może zostać zgłoszony wyjątek 
-            return Int32.Parse(value);
+        public void WznowRozgrywke()
+        {
+            gra.Wznow();
+            widok.CzyscEkran();
+            widok.KomunikatRozgrywkaWznowiona();
+            widok.HistoriaGry();
         }
     }
 

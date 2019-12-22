@@ -78,7 +78,9 @@ namespace GraZaDuzoZaMalo.Model
             /// <summary>Status gry ustawiany w momencie odgadnięcia poszukiwanej liczby.</summary>
             Zakonczona,
             /// <summary>Status gry ustawiany w momencie jawnego przerwania gry przez gracza.</summary>
-            Poddana
+            Poddana,
+            /// <summary>Status gry ustawiany w momencie zawieszenia gry przez gracza.</summary>
+            Zawieszona
         };
 
         /// <summary>
@@ -156,16 +158,33 @@ namespace GraZaDuzoZaMalo.Model
             return odp;
         }
 
-        public int Przerwij()
+        public int Poddaj()
         {
             if (StatusGry == Status.WTrakcie)
             {
                 StatusGry = Status.Poddana;
                 CzasZakonczenia = DateTime.Now;
+                listaRuchow.Add(new Ruch(null, null, Status.Poddana));
+            }
+            return liczbaDoOdgadniecia;
+        }
+
+        public void Wstrzymaj()
+        {
+            if (StatusGry == Status.WTrakcie)
+            {
+                StatusGry = Status.Zawieszona;
+                listaRuchow.Add(new Ruch(null, null, Status.Zawieszona));
+            }
+        }
+
+        public void Wznow()
+        {
+            if (StatusGry == Status.Zawieszona)
+            {
+                StatusGry = Status.WTrakcie;
                 listaRuchow.Add(new Ruch(null, null, Status.WTrakcie));
             }
-
-            return liczbaDoOdgadniecia;
         }
 
 
