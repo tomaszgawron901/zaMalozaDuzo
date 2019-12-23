@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Xml;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -69,18 +69,22 @@ namespace AppGraZaDuzoZaMaloCLI
 
         public void WczytajRozgryke()
         {
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream(@"save.txt", FileMode.Open, FileAccess.Read);
-            gra= (Gra)formatter.Deserialize(stream);
+            Stream stream = new FileStream(@"save.txt", FileMode.Open);
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(stream, new XmlDictionaryReaderQuotas());
+            DataContractSerializer serializer = new DataContractSerializer(typeof(Gra));
+            gra = (Gra)serializer.ReadObject(reader, true);
+            reader.Close();
             stream.Close();
         }
 
         public void ZapiszRozgrywke()
         {
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write);
-            formatter.Serialize(stream, gra);
-            stream.Close();
+            using (var stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write))
+            {
+                DataContractSerializer serializer = new DataContractSerializer(typeof(Gra));
+                serializer.WriteObject(stream, gra);
+                stream.Close();
+            }
         }
 
         public void InicjalizujNowaRozgrywke()

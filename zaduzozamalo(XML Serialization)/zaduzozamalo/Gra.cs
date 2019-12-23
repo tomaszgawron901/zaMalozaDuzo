@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
+using System.Xml;
+
 
 namespace GraZaDuzoZaMalo.Model
 {
@@ -48,13 +52,15 @@ namespace GraZaDuzoZaMalo.Model
     [Serializable]
     public class Gra
     {
+
         /// <summary>
         /// Górne ograniczenie losowanej liczby, która ma zostać odgadnięta.
         /// </summary>
         /// <value>
         /// Domyślna wartość wynosi 100. Wartość jest ustawiana w konstruktorze i nie może zmienić się podczas życia obiektu gry.
         /// </value>
-        public int MaxLiczbaDoOdgadniecia { get; } = 100;
+        public int MaxLiczbaDoOdgadniecia { get; }
+
 
         /// <summary>
         /// Dolne ograniczenie losowanej liczby, która ma zostać odgadnięta.
@@ -62,7 +68,7 @@ namespace GraZaDuzoZaMalo.Model
         /// <value>
         /// Domyślna wartość wynosi 1. Wartość jest ustawiana w konstruktorze i nie może zmienić się podczas życia obiektu gry.
         /// </value>
-        public int MinLiczbaDoOdgadniecia { get; } = 1;
+        public int MinLiczbaDoOdgadniecia { get; }
 
 
         readonly private int liczbaDoOdgadniecia;
@@ -93,7 +99,7 @@ namespace GraZaDuzoZaMalo.Model
         /// </remarks>
         public Status StatusGry { get; private set; }
 
-
+        [DataMember]
         private List<Ruch> listaRuchow;
 
         public IReadOnlyList<Ruch> ListaRuchow { get { return listaRuchow.AsReadOnly(); } }
@@ -102,6 +108,7 @@ namespace GraZaDuzoZaMalo.Model
         /// Czas rozpoczęcia gry, ustawiany w momencie utworzenia obiektu gry, w konstruktorze. Nie można go już zmodyfikować podczas życia obiektu.
         /// </summary>
         public DateTime CzasRozpoczecia { get; }
+
         public DateTime? CzasZakonczenia { get; private set; }
 
         /// <summary>
