@@ -72,23 +72,21 @@ namespace AppGraZaDuzoZaMaloCLI
 
         public void WczytajRozgryke()
         {
-            Stream stream = new FileStream(@"save.txt", FileMode.Open);
-            XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(stream, new XmlDictionaryReaderQuotas());
-            DataContractSerializer serializer = new DataContractSerializer(typeof(Gra));
-            gra = (Gra)serializer.ReadObject(reader, true);
-            reader.Close();
-            stream.Close();
+            using (Stream stream = new FileStream(@"save.txt", FileMode.Open, FileAccess.Read))
+            {
+                var data = new XmlDocument();
+                data.Load(stream);
+                gra = data.Odszyfruj();
+                stream.Close();
+            }
+
         }
 
         public void ZapiszRozgrywke()
         {
-            RijndaelManaged klucz = new RijndaelManaged();
-            Gra nowaGra = gra.Zaszyfruj(klucz).Odszyfruj(klucz);
             using (var stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write))
             {
-                DataContractSerializer serializer = new DataContractSerializer(typeof(Gra));
-                serializer.WriteObject(stream, gra);
-                stream.Close();
+                gra.Zaszyfruj().Save(stream);
             }
         }
 
@@ -203,8 +201,15 @@ namespace AppGraZaDuzoZaMaloCLI
         }
     }
 
-    static internal class StreamManager
+    static internal class XMLSerializationManager
     {
+        static private RijndaelManaged _klucz = new RijndaelManaged();
+        static XMLSerializationManager()
+        {
+            _klucz.Key = new byte[32] { 118, 123, 23, 17, 161, 152, 35, 68, 126, 213, 16, 115, 68, 217, 58, 108, 56, 218, 5, 78, 28, 128, 113, 208, 61, 56, 10, 87, 187, 162, 233, 38 };
+            _klucz.IV = new byte[16] { 33, 241, 14, 16, 103, 18, 14, 248, 4, 54, 18, 5, 60, 76, 16, 191};
+        }
+
         static public string serializujDoString(this Gra obiektDoSerializacji)
         {
             using (var output = new StringWriter())
@@ -225,17 +230,17 @@ namespace AppGraZaDuzoZaMaloCLI
             return (Gra)serializer.ReadObject(reader, true);
         }
 
-        static public string Zaszyfruj(this Gra obiektDoZaszyfrowania, RijndaelManaged klucz)
+        static public XmlDocument Zaszyfruj(this Gra obiektDoZaszyfrowania)
         {
             XmlDocument Doc = new XmlDocument();
             Doc.LoadXml(obiektDoZaszyfrowania.serializujDoString());
-            byte[] zaszyfrowanyElement = new EncryptedXml().EncryptData(Doc.DocumentElement, klucz, false);
+            byte[] zaszyfrowanyElement = new EncryptedXml().EncryptData(Doc.DocumentElement, _klucz, false);
             EncryptedData edElement = new EncryptedData();
             edElement.Type = EncryptedXml.XmlEncElementUrl;
             string encryptionMethod = null;
-            if (klucz is Rijndael)
+            if (_klucz is Rijndael)
             {
-                switch (klucz.KeySize)
+                switch (_klucz.KeySize)
                 {
                     case 128:
                         encryptionMethod = EncryptedXml.XmlEncAES128Url;
@@ -255,37 +260,15 @@ namespace AppGraZaDuzoZaMaloCLI
             edElement.EncryptionMethod = new EncryptionMethod(encryptionMethod);
             edElement.CipherData.CipherValue = zaszyfrowanyElement;
             EncryptedXml.ReplaceElement(Doc.DocumentElement, edElement, false);
-            return Doc.InnerXml;
+            return Doc;
         }
 
-        static public Gra Odszyfruj(this string xml, SymmetricAlgorithm Alg)
+        static public Gra Odszyfruj(this XmlDocument Doc)
         {
-            if (Alg == null)
-                throw new ArgumentNullException("Alg");
-
-            // Find the EncryptedData element in the XmlDocument.
-            XmlDocument Doc = new XmlDocument();
-            Doc.LoadXml(xml);
-
-            // If the EncryptedData element was not found, throw an exception.
-            if (Doc.DocumentElement == null)
-            {
-                throw new XmlException("The EncryptedData element was not found.");
-            }
-
-
-            // Create an EncryptedData object and populate it.
             EncryptedData edElement = new EncryptedData();
             edElement.LoadXml(Doc.DocumentElement);
-
-            // Create a new EncryptedXml object.
             EncryptedXml exml = new EncryptedXml();
-
-
-            // Decrypt the element using the symmetric key.
-            byte[] rgbOutput = exml.DecryptData(edElement, Alg);
-
-            // Replace the encryptedData element with the plaintext XML element.
+            byte[] rgbOutput = exml.DecryptData(edElement, _klucz);
             exml.ReplaceData(Doc.DocumentElement, rgbOutput);
             return Doc.InnerXml.deserializujDoGra();
         }
