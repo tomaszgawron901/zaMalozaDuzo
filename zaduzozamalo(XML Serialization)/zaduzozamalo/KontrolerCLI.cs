@@ -39,12 +39,12 @@ namespace AppGraZaDuzoZaMaloCLI
         {
             gra = new Gra();
             widok = new WidokCLI(this);
-            RozpocznijAutomatyczyZapis();
         }
 
         public void Uruchom()
         {
             widok.OpisGry();
+            RozpocznijAutomatyczyZapis();
             try
             {
                 if (!File.Exists(filePath)) throw new FileNotFoundException();
@@ -67,7 +67,7 @@ namespace AppGraZaDuzoZaMaloCLI
                 UruchomRozgrywke();
                 UsunPlik(filePath);
             }
-                
+            Escape();
         }
 
         public void UsunPlik( string path )
@@ -189,10 +189,16 @@ namespace AppGraZaDuzoZaMaloCLI
         {
             WstrzymajRozgrywke();
             ZapiszRozgrywke();
+            Escape();
+            System.Environment.Exit(0);
+        }
+
+        private void Escape()
+        {
             gra = null;
             widok.CzyscEkran(); //komunikat o końcu gry
             widok = null;
-            System.Environment.Exit(0);
+            autoSave.Abort();
         }
 
         public void PoddajRozgrywke()
@@ -227,7 +233,9 @@ namespace AppGraZaDuzoZaMaloCLI
             while(true)
             {
                 Thread.Sleep(5000);
-                if(gra != null && gra.StatusGry == Gra.Status.WTrakcie)
+                if (gra == null)
+                    break;
+                if(gra.StatusGry == Gra.Status.WTrakcie)
                 {
                     ZapiszRozgrywke();
                     lastSave = DateTime.Now;

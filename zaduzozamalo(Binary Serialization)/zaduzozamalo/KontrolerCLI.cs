@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using GraZaDuzoZaMalo.Model;
 using static GraZaDuzoZaMalo.Model.Gra.Odpowiedz;
 
@@ -15,6 +15,8 @@ namespace AppGraZaDuzoZaMaloCLI
     {
         private Gra gra;
         private WidokCLI widok;
+        private Thread autoSave;
+        private DateTime lastSave;
 
         public int MinZakres { get; private set; } = 1;
         public int MaxZakres { get; private set; } = 100;
@@ -36,6 +38,7 @@ namespace AppGraZaDuzoZaMaloCLI
         public void Uruchom()
         {
             widok.OpisGry();
+            RozpocznijAutomatyczyZapis();
             try
             {
                 if (!File.Exists(@"save.txt")) throw new FileNotFoundException();
@@ -58,6 +61,7 @@ namespace AppGraZaDuzoZaMaloCLI
                 UruchomRozgrywke();
                 UsunPlik(@"save.txt");
             }
+            Escape();
                 
         }
 
@@ -168,10 +172,16 @@ namespace AppGraZaDuzoZaMaloCLI
         {
             WstrzymajRozgrywke();
             ZapiszRozgrywke();
+            Escape();
+            System.Environment.Exit(0);
+        }
+
+        private void Escape()
+        {
             gra = null;
             widok.CzyscEkran(); //komunikat o końcu gry
             widok = null;
-            System.Environment.Exit(0);
+            autoSave.Abort();
         }
 
         public void PoddajRozgrywke()
@@ -191,6 +201,25 @@ namespace AppGraZaDuzoZaMaloCLI
             widok.CzyscEkran();
             widok.KomunikatRozgrywkaWznowiona();
             widok.HistoriaGry();
+        }
+
+        private void RozpocznijAutomatyczyZapis()
+        {
+            autoSave = new Thread(automatycznyZapis);
+            autoSave.Start();
+        }
+
+        private void automatycznyZapis()
+        {
+            while (true)
+            {
+                Thread.Sleep(5000);
+                if (gra != null && gra.StatusGry == Gra.Status.WTrakcie)
+                {
+                    ZapiszRozgrywke();
+                    lastSave = DateTime.Now;
+                }
+            }
         }
     }
 
