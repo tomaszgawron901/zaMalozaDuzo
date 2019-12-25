@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using GraZaDuzoZaMalo.Model;
 using static GraZaDuzoZaMalo.Model.Gra.Odpowiedz;
 using System.Security.Cryptography.Xml;
@@ -16,8 +16,13 @@ namespace AppGraZaDuzoZaMaloCLI
 {
     public class KontrolerCLI
     {
+        private static string filePath = @"save.txt";
+
         private Gra gra;
         private WidokCLI widok;
+        private Thread autoSave;
+        private DateTime lastSave;
+        private object _object = new Object();
 
         public int MinZakres { get; private set; } = 1;
         public int MaxZakres { get; private set; } = 100;
@@ -34,6 +39,7 @@ namespace AppGraZaDuzoZaMaloCLI
         {
             gra = new Gra();
             widok = new WidokCLI(this);
+            RozpocznijAutomatyczyZapis();
         }
 
         public void Uruchom()
@@ -41,7 +47,7 @@ namespace AppGraZaDuzoZaMaloCLI
             widok.OpisGry();
             try
             {
-                if (!File.Exists(@"save.txt")) throw new FileNotFoundException();
+                if (!File.Exists(filePath)) throw new FileNotFoundException();
                 WczytajRozgryke();//Może zgłosić wyjątek.
                 if (gra.StatusGry == Gra.Status.Zakonczona || gra.StatusGry == Gra.Status.Poddana)
                     throw new Exception("Odczytana rozgrywka jest już zakończona.");
@@ -54,39 +60,47 @@ namespace AppGraZaDuzoZaMaloCLI
                 }
             }
             catch (Exception) { }
-            finally { UsunPlik(@"save.txt"); }
+            finally { UsunPlik(filePath); }
             while( widok.ChceszKontynuowac("Czy chcesz kontynuować aplikację (t/n)? ") )
             {
                 InicjalizujNowaRozgrywke();
                 UruchomRozgrywke();
-                UsunPlik(@"save.txt");
+                UsunPlik(filePath);
             }
                 
         }
 
         public void UsunPlik( string path )
         {
-            if (File.Exists(path))
-                File.Delete(path);
+            lock (_object)
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
         }
 
         public void WczytajRozgryke()
         {
-            using (Stream stream = new FileStream(@"save.txt", FileMode.Open, FileAccess.Read))
+            lock (_object)
             {
-                var data = new XmlDocument();
-                data.Load(stream);
-                gra = data.Odszyfruj();
-                stream.Close();
+                using (Stream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    var data = new XmlDocument();
+                    data.Load(stream);
+                    gra = data.Odszyfruj();
+                    stream.Close();
+                }
             }
-
         }
 
         public void ZapiszRozgrywke()
         {
-            using (var stream = new FileStream(@"save.txt", FileMode.Create, FileAccess.Write))
+            lock(_object)
             {
-                gra.Zaszyfruj().Save(stream);
+                using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+                {
+                    gra.Zaszyfruj().Save(stream);
+                }
             }
         }
 
@@ -183,8 +197,10 @@ namespace AppGraZaDuzoZaMaloCLI
 
         public void PoddajRozgrywke()
         {
+            widok.CzyscEkran();
             widok.KomunikatRozgrywkaPoddana();
             Console.WriteLine($"Poszukwana liczba to {gra.Poddaj()}.");
+            widok.HistoriaGry();
         }
 
         public void WstrzymajRozgrywke()
@@ -198,6 +214,25 @@ namespace AppGraZaDuzoZaMaloCLI
             widok.CzyscEkran();
             widok.KomunikatRozgrywkaWznowiona();
             widok.HistoriaGry();
+        }
+
+        private void RozpocznijAutomatyczyZapis()
+        {
+            autoSave = new Thread(automatycznyZapis);
+            autoSave.Start();
+        }
+
+        private void automatycznyZapis()
+        {
+            while(true)
+            {
+                Thread.Sleep(5000);
+                if(gra != null && gra.StatusGry == Gra.Status.WTrakcie)
+                {
+                    ZapiszRozgrywke();
+                    lastSave = DateTime.Now;
+                }
+            }
         }
     }
 
